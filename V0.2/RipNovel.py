@@ -1,9 +1,10 @@
 import argparse
-# import requests
-# import pdfkit
-# from bs4 import BeautifulSoup
-# from PyPDF2 import PdfFileMerger, PdfFileReader
-# import os
+import requests
+import pdfkit
+from bs4 import BeautifulSoup
+from PyPDF2 import PdfFileMerger, PdfFileReader
+import os
+import re
 
 def HandleArguments():
     parser = argparse.ArgumentParser(description="Script to scrap NovelFull site and convert Desired Chapters to PDF")
@@ -13,37 +14,51 @@ def HandleArguments():
     return parser.parse_args()
 
 def ScrapChapters(uri,start_chapter,end_chapter):
-    URL = "https://novelfull.com/i-have-countless-legendary-swords/chapter-{0}.html"
-    ChapterNumber = 32
-    page = requests.get(URL.format(ChapterNumber))
+    ChapterNumber = start_chapter
+    page = requests.get(uri.format(ChapterNumber))
 
-    while page.status_code != 404:
+    while page.status_code != 404 and ChapterNumber <= end_chapter:
         soup = BeautifulSoup(page.content,'html.parser')
         chapter = str(soup.find(id='chapter').prettify())
-        title = "Chapter " + str(ChapterNumber)
+        title = "Chapter_" + str(ChapterNumber)
         location = "./Chapters/{0}.pdf"
-        pdfkit.from_file('test.html', location.format(title))
+        pdfkit.from_string(RemoveScriptTags(chapter), location.format(title))
+        print (f"\r  Fetching Chapters: ({str(ChapterNumber)}:??)", end="")
         ChapterNumber += 1
-        page = requests.get(URL.format(ChapterNumber))
+        page = requests.get(uri.format(ChapterNumber))
+
+    print("\n")
 
 def RemoveScriptTags(chapter):
     regex = re.compile(r'(<script((.|\n)*?)<\/script>)')
     return re.sub(regex,"",chapter)
 
-def GeneratePDFBook():
+def GeneratePDFBook(start_chapter):
+    print("Combining Chapters and Generating Book....")
     #Count Number of Files in chapters to Merge
     paths, dirs, files = next(os.walk('./Chapters'))
     file_count = len(files)
 
     #Merge PDFs
     mergedObject = PdfFileMerger()
-    for fileNumber in range(1, file_count):
-        Filename = "./Chapters/Chapter {0}.pdf"
-        mergedObject.append(PdfFileReader(Filename.format(fileNumber)))
+    for fileNumber in range(start_chapter, file_count):
+        Filename = f"./Chapters/Chapter_{fileNumber}.pdf"
+        mergedObject.append(PdfFileReader(Filename))
+
     #write the changes
     mergedObject.write("Book.pdf")
+    print("Book Created")
+
+def cleanup():
+    #Remove Chapter files from Temp Chapter Folder
+    print("Cleaning up....")
+    paths, dirs, files = next(os.walk('./Chapters'))
+    for file in files:
+        os.remove(f"./Chapters/{file}")
 
 if __name__ == "__main__":
     args = HandleArguments()
     ScrapChapters(args.uri,args.start_chapter,args.end_chapter)
-    GeneratePDFBook()
+    GeneratePDFBook(args.start_chapter)
+    #cleanup()
+    print("-------- Done :) ------")
