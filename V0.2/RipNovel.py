@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger, PdfFileReader
 import os
 import re
+import logging
 
 def HandleArguments():
     parser = argparse.ArgumentParser(description="Script to scrap NovelFull site and convert Desired Chapters to PDF")
@@ -43,7 +44,7 @@ def GeneratePDFBook(start_chapter):
     mergedObject = PdfFileMerger()
     for fileNumber in range(start_chapter, file_count):
         Filename = f"./Chapters/Chapter_{fileNumber}.pdf"
-        mergedObject.append(PdfFileReader(Filename))
+        mergedObject.append(PdfFileReader(Filename),import_bookmarks=False)
 
     #write the changes
     mergedObject.write("Book.pdf")
@@ -58,7 +59,8 @@ def cleanup():
 
 if __name__ == "__main__":
     args = HandleArguments()
+    logging.getLogger("requests").setLevel(logging.WARNING)
     ScrapChapters(args.uri,args.start_chapter,args.end_chapter)
     GeneratePDFBook(args.start_chapter)
-    #cleanup()
+    cleanup()
     print("-------- Done :) ------")
