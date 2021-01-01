@@ -11,7 +11,7 @@ soup = BeautifulSoup(page.content,'html.parser')
 Chapter = str(soup.find(id='chapter-content').prettify())
 Next_Chaper = str(soup.find(id='next_chap').prettify())
 
-regex = r"(\"/((.|\n)*?).html\")"
+regex = r"(/((.|\n)*?).html)"
 
 matches = re.search(regex,Next_Chaper)
 print(matches.group(0))
